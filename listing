@@ -1,3 +1,7 @@
 1. int i;
-2. i = 5;
-3. print i;
+2. int j;
+3. int z;
+4. i = 5;
+5. j = 4;
+6. z = i - j;
+7. print z;

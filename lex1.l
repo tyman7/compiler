@@ -41,8 +41,9 @@ print					{return Write;}
 
 %%
 
-	
+int	
 yywrap () {
+    return 1;
 }
 			
 	

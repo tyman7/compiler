@@ -44,27 +44,30 @@ extern struct SymEntry *entry;
 
 %%
 
-Prog			:	Declarations StmtSeq						{Finish($2); } ;
-Declarations	:	Dec Declarations							{ };
-Declarations	:											{ };
-Dec			:	Int Ident {EnterName(table, yytext, &entry); }';'	{};
-StmtSeq 		:	Stmt StmtSeq								{$$ = AppendSeq($1, $2); } ;
-StmtSeq		:											{$$ = NULL;} ;
-Stmt			:	Write Expr ';'								{$$ = doPrint($2); };
-Stmt			:	Id '=' Expr ';'								{$$ = doAssign($1, $3);} ;
-Stmt			:	IF '(' BExpr ')' '{' StmtSeq '}'					{$$ = doIf($3, $6);};
-BExpr		:	Expr EQ Expr								{$$ = doBExpr($1, $3);};
-Expr			:	Expr '+' Term								{$$ = doAdd($1, $3); } ;
-Expr			:	Term									{$$ = $1; } ;
-Term		:	Term '*' Factor								{ $$ = doMult($1, $3); } ;
-Term		:	Factor									{ $$ = $1; } ;
-Factor		:	IntLit									{ $$ = doIntLit(yytext); };
-Factor		:	Ident									{ $$ = doRval(yytext); };
-Id			: 	Ident									{ $$ = strdup(yytext);}
+Prog			:	Declarations StmtSeq						        {Finish($2); };
+Declarations	:	Dec Declarations							        { };
+Declarations	:											            { };
+Dec		    	:	Int Ident {EnterName(table, yytext, &entry); }';'	{};
+StmtSeq 		:	Stmt StmtSeq								        {$$ = AppendSeq($1, $2); };
+StmtSeq	    	:											            {$$ = NULL; };
+Stmt			:	Write Expr ';'								        {$$ = doPrint($2); };
+Stmt			:	Id '=' Expr ';'							        	{$$ = doAssign($1, $3); };
+Stmt			:	IF '(' BExpr ')' '{' StmtSeq '}'					{$$ = doIf($3, $6); };
+BExpr	    	:	Expr EQ Expr							        	{$$ = doBExpr($1, $3); };
+Expr			:	Expr '+' Term							        	{$$ = doAdd($1, $3); };
+Expr            :   Expr '-' Term                                       {$$ = doBinaryMinus($1, $3); };
+Expr			:	Term								            	{$$ = $1; };
+Term	    	:	Term '*' Factor								        { $$ = doMult($1, $3); };
+Term		    :	Factor						            			{ $$ = $1; } ;
+Factor		    :	IntLit								            	{ $$ = doIntLit(yytext); };
+Factor		    :	Ident								            	{ $$ = doRval(yytext); };
+Id			    : 	Ident								            	{ $$ = strdup(yytext); };
  
 %%
 
+int
 yyerror(char *s)  {
   WriteIndicator(GetCurrentColumn());
   WriteMessage("Illegal Character in YACC");
+  return 1;
 }
