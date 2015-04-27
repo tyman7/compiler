@@ -1,13 +1,13 @@
 	.text	
 	.globl		main
 main:
-	li		$t0, 5
+	li		$t0, 12
 	sw		$t0, i
-	li		$t0, 4
+	li		$t0, 3
 	sw		$t0, j
 	lw		$t0, i
 	lw		$t1, j
-	sub		$t2, $t0, $t1
+	div		$t2, $t0, $t1
 	sw		$t2, z
 	lw		$t0, z
 	li		$v0, 1

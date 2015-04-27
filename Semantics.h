@@ -34,5 +34,7 @@ extern struct ExprRes *  doMult(struct ExprRes * Res1,  struct ExprRes * Res2);
 extern struct InstrSeq *  doPrint(struct ExprRes * Expr);
 extern struct BExprRes * doBExpr (struct ExprRes * Res1,  struct ExprRes * Res2);
 extern struct InstrSeq * doIf(struct BExprRes *bRes, struct InstrSeq * seq);
+extern struct ExprRes * doDivide(struct ExprRes * Res1, struct ExprRes * Res2);
+
 
 extern void	Finish(struct InstrSeq *Code);
