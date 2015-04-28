@@ -34,6 +34,8 @@ extern struct SymEntry *entry;
 %type <InstrSeq> StmtSeq
 %type <InstrSeq> Stmt
 %type <BExprRes> BExpr
+%type <ExprRes> NegTerm
+%type <ExprRes> ExpTerm
 
 %token Ident 		
 %token IntLit 	
@@ -57,9 +59,14 @@ BExpr	    	:	Expr EQ Expr							        	{$$ = doBExpr($1, $3); };
 Expr			:	Expr '+' Term							        	{$$ = doAdd($1, $3); };
 Expr            :   Expr '-' Term                                       {$$ = doBinaryMinus($1, $3); };
 Expr			:	Term								            	{$$ = $1; };
-Term	    	:	Term '*' Factor								        { $$ = doMult($1, $3); };
-Expr            :   Term '/' Factor                                     { $$ = doDivide($1, $3); };
-Term		    :	Factor						            			{ $$ = $1; } ;
+Term	    	:	Term '*' ExpTerm								        { $$ = doMult($1, $3); };
+Term            :   Term '/' ExpTerm                                    { $$ = doDivide($1, $3); };
+Term            :   Term '%' ExpTerm                                    { $$ = doMod($1, $3); };                
+Term            :   ExpTerm                                             { $$ = $1; };
+ExpTerm         :   NegTerm '^' ExpTerm                                 { $$ = doPower($1, $3); };
+ExpTerm         :   NegTerm                                             { $$ = $1; };
+NegTerm         :   '-' Factor                                          { $$ = doNeg($2); };
+NegTerm         :   Factor                                              { $$ = $1; };
 Factor		    :	IntLit								            	{ $$ = doIntLit(yytext); };
 Factor		    :	Ident								            	{ $$ = doRval(yytext); };
 Id			    : 	Ident								            	{ $$ = strdup(yytext); };

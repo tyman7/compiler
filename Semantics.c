@@ -74,7 +74,53 @@ struct ExprRes * doBinaryMinus(struct ExprRes * Res1, struct ExprRes * Res2){
     return Res1;
 }
 
+struct ExprRes * doNeg(struct ExprRes * Res1){
+    int reg;
+    reg = AvailTmpReg();
+    AppendSeq(Res1->Instrs, GenInstr(NULL, "sub",
+                                                TmpRegName(reg),
+                                                "$0",
+                                                TmpRegName(Res1->Reg)));
+    ReleaseTmpReg(Res1->Reg);
+    Res1->Reg = reg;
+   
+    return Res1;
+}
 
+struct ExprRes * doPower(struct ExprRes * Res1, struct ExprRes * Res2) {
+    int reg;
+    reg = AvailTmpReg();
+    
+    struct InstrSeq* iseq;
+    int pow = AvailTmpReg();
+    int current = AvailTmpReg();
+    char * l1 = GenLabel();
+    char * l2 = GenLabel();
+
+    iseq = GenInstr(NULL, "move", TmpRegName(pow), "$0", NULL);
+    AppendSeq(iseq, GenInstr(NULL, "addi", TmpRegName(current), "$0", "1"));
+    AppendSeq(iseq, GenInstr(NULL, "beq", TmpRegName(Res2->Reg), "$0", l2));
+    AppendSeq(iseq, GenInstr(l1, NULL, NULL, NULL, NULL));
+    AppendSeq(iseq, GenInstr(NULL, "mul", TmpRegName(current), TmpRegName(current), TmpRegName(Res1->Reg)));
+    AppendSeq(iseq, GenInstr(NULL, "addi", TmpRegName(pow), TmpRegName(pow), "1"));
+    AppendSeq(iseq, GenInstr(NULL, "blt", TmpRegName(pow), TmpRegName(Res2->Reg), l1));
+    AppendSeq(iseq, GenInstr(l2, NULL, NULL, NULL, NULL));
+
+    AppendSeq(Res1->Instrs, Res2->Instrs);
+    AppendSeq(Res1->Instrs, iseq);
+    ReleaseTmpReg(Res1->Reg);
+    ReleaseTmpReg(Res2->Reg);
+    ReleaseTmpReg(pow);
+    Res1->Reg = current;
+    free(l1);
+    free(l2);
+    free(Res2);
+
+    return Res1;
+        
+    
+
+  }
 struct ExprRes *  doMult(struct ExprRes * Res1, struct ExprRes * Res2)  { 
 
    int reg;
@@ -98,6 +144,23 @@ struct ExprRes * doDivide(struct ExprRes * Res1, struct ExprRes * Res2){
     reg = AvailTmpReg();
     AppendSeq(Res1->Instrs, Res2->Instrs);
     AppendSeq(Res1->Instrs, GenInstr(NULL,"div",
+                                                TmpRegName(reg),
+                                                TmpRegName(Res1->Reg),
+                                                TmpRegName(Res2->Reg)));
+    ReleaseTmpReg(Res1->Reg);
+    ReleaseTmpReg(Res2->Reg);
+    Res1->Reg = reg;
+    free(Res2);
+    return Res1;
+}
+
+struct ExprRes * doMod(struct ExprRes * Res1, struct ExprRes * Res2){
+    int reg;
+
+    reg = AvailTmpReg();
+
+    AppendSeq(Res1->Instrs, Res2->Instrs);
+    AppendSeq(Res1->Instrs, GenInstr(NULL,"rem",
                                                 TmpRegName(reg),
                                                 TmpRegName(Res1->Reg),
                                                 TmpRegName(Res2->Reg)));
