@@ -225,12 +225,55 @@ extern struct BExprRes * doBExpr(struct ExprRes * Res1,  struct ExprRes * Res2) 
 	return bRes;
 }
 
-extern struct InstrSeq * doIf(struct BExprRes * bRes, struct InstrSeq * seq) {
-	struct InstrSeq * seq2;
-	seq2 = AppendSeq(bRes->Instrs, seq);
-	AppendSeq(seq2, GenInstr(bRes->Label, NULL, NULL, NULL, NULL));
-	free(bRes);
-	return seq2;
+extern struct ExprRes * doRelOp(struct ExprRes * Res1, struct ExprRes * Res2, int op){
+    
+    struct InstrSeq * iseq;
+    char * t_res = GenLabel();
+    
+    char * end = GenLabel();
+    int reg = AvailTmpReg();
+
+    if (op == 0 ){
+        iseq = GenInstr(NULL, "beq", TmpRegName(Res1->Reg), TmpRegName(Res2->Reg), t_res);
+    }
+    else if (op == 1){
+        iseq = GenInstr(NULL, "beq", TmpRegName(Res1->Reg), TmpRegName(Res2->Reg), t_res);
+        AppendSeq(iseq, GenInstr(NULL, "bgt", TmpRegName(Res1->Reg), TmpRegName(Res2->Reg), t_res));
+    }
+    else if (op == 2) {
+        iseq = GenInstr(NULL, "beq", TmpRegName(Res1->Reg), TmpRegName(Res2->Reg), t_res);
+        AppendSeq(iseq, GenInstr(NULL, "blt", TmpRegName(Res1->Reg), TmpRegName(Res2->Reg), t_res));
+    }
+    else if (op == 3) {
+        iseq = GenInstr(NULL, "bne", TmpRegName(Res1->Reg), TmpRegName(Res2->Reg), t_res);
+    }
+    else if (op == 4) {
+        iseq = GenInstr(NULL, "blt", TmpRegName(Res1->Reg), TmpRegName(Res2->Reg),t_res);
+    }
+    else if (op == 5) {
+        iseq = GenInstr(NULL, "bgt", TmpRegName(Res1->Reg), TmpRegName(Res2->Reg), t_res);
+    }
+
+    AppendSeq(iseq, GenInstr(NULL, "li", TmpRegName(reg), "0", NULL));
+    AppendSeq(iseq, GenInstr(NULL, "b", end, NULL,NULL));
+    AppendSeq(iseq, GenInstr(t_res, NULL,NULL,NULL,NULL));
+    AppendSeq(iseq, GenInstr(NULL, "li", TmpRegName(reg), "1", NULL));
+    AppendSeq(iseq, GenInstr(end, NULL,NULL,NULL,NULL));
+
+    AppendSeq(Res1->Instrs, Res2->Instrs);
+    AppendSeq(Res1->Instrs, iseq);
+    ReleaseTmpReg(Res1->Reg);
+    ReleaseTmpReg(Res2->Reg);
+    free(t_res);
+    free(end);
+    free(Res2);
+    Res1->Reg = reg;
+    return Res1;
+}
+
+
+extern struct InstrSeq * doIf(struct ExprRes * bRes, struct InstrSeq * seq) {
+	return NULL;
 }
 
 /*

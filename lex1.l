@@ -21,6 +21,11 @@ print				        	{return Write;}
 {letter}({letter}|{digit})*	    {return Ident;}
 {digit}{digit}*		            {return IntLit;}
 \=\=					        {return EQ;}
+\>\=                            {return GTEQ;}
+\<\=                            {return LTEQ;}
+\!\=                            {return NEQ;}
+\<                              {return '<';}
+\>                              {return '>';}
 \=		               			{return '=';}
 \-                              {return '-';}
 \+			               		{return '+';}

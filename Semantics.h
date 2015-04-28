@@ -33,10 +33,12 @@ extern struct ExprRes * doBinaryMinus(struct ExprRes * Res1, struct ExprRes * Re
 extern struct ExprRes *  doMult(struct ExprRes * Res1,  struct ExprRes * Res2);
 extern struct InstrSeq *  doPrint(struct ExprRes * Expr);
 extern struct BExprRes * doBExpr (struct ExprRes * Res1,  struct ExprRes * Res2);
-extern struct InstrSeq * doIf(struct BExprRes *bRes, struct InstrSeq * seq);
+extern struct InstrSeq * doIf(struct ExprRes *bRes, struct InstrSeq * seq);
 extern struct ExprRes * doDivide(struct ExprRes * Res1, struct ExprRes * Res2);
 extern struct ExprRes * doMod(struct ExprRes * Res1, struct ExprRes * Res2);
 extern struct ExprRes * doNeg(struct ExprRes * Res1);
 extern struct ExprRes * doPower(struct ExprRes * Res1, struct ExprRes *Res2);
+extern struct ExprRes * doRelOp(struct ExprRes * Res1, struct ExprRes * Res2, int op);
+
 
 extern void	Finish(struct InstrSeq *Code);

@@ -1,3 +1,18 @@
 int i;
-i = 3 ^ 2;
+int j;
+int k;
+int l;
+int m;
+
+i = 3 != 4;
+j = 2 < 3;
+k = 7 > 5;
+l = 6 >= 5;
+m = 4 <= 8;
+
 print i;
+print j;
+print k;
+print l;
+print m;
+
