@@ -1,18 +1,9 @@
-1. int i;
-2. int j;
-3. int k;
-4. int l;
-5. int m;
+1. bool i;
+2. bool k;
+3. 
+4. k = true;
+5. i = !k;
 6. 
-7. i = 3 != 4;
-8. j = 2 < 3;
-9. k = 7 > 5;
-10. l = 6 >= 5;
-11. m = 4 <= 8;
-12. 
-13. print i;
-14. print j;
-15. print k;
-16. print l;
-17. print m;
-18. 
+7. 
+8. print k;
+9. print i;

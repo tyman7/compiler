@@ -1,18 +1,9 @@
-int i;
-int j;
-int k;
-int l;
-int m;
+bool i;
+bool k;
 
-i = 3 != 4;
-j = 2 < 3;
-k = 7 > 5;
-l = 6 >= 5;
-m = 4 <= 8;
+k = true;
+i = !k;
 
-print i;
-print j;
+
 print k;
-print l;
-print m;
-
+print i;

@@ -41,19 +41,23 @@ extern struct SymEntry *entry;
 %token Ident 		
 %token IntLit 	
 %token Int
+%token Bool
 %token Write
 %token IF
 %token EQ	
 %token GTEQ
 %token LTEQ
 %token NEQ
+%token Tru
+%token Fal
 
 %%
 
 Prog			:	Declarations StmtSeq						        {Finish($2); };
 Declarations	:	Dec Declarations							        { };
 Declarations	:											            { };
-Dec		    	:	Int Ident {EnterName(table, yytext, &entry); }';'	{};
+Dec		    	:	Int Id ';'                                       	{IntDec($2); };
+Dec             :   Bool Id ';'                                         {BoolDec($2); };          
 StmtSeq 		:	Stmt StmtSeq								        {$$ = AppendSeq($1, $2); };
 StmtSeq	    	:											            {$$ = NULL; };
 Stmt			:	Write Expr ';'								        {$$ = doPrint($2); };
@@ -75,7 +79,10 @@ Term            :   ExpTerm                                             { $$ = $
 ExpTerm         :   NegTerm '^' ExpTerm                                 { $$ = doPower($1, $3); };
 ExpTerm         :   NegTerm                                             { $$ = $1; };
 NegTerm         :   '-' Factor                                          { $$ = doNeg($2); };
+NegTerm         :   '!' Factor                                          { $$ = doNot($2); };
 NegTerm         :   Factor                                              { $$ = $1; };
+Factor          :   Tru                                                 { $$ = doBoolLit(1); };
+Factor          :   Fal                                                 { $$ = doBoolLit(0); };
 Factor		    :	IntLit								            	{ $$ = doIntLit(yytext); };
 Factor		    :	Ident								            	{ $$ = doRval(yytext); };
 Id			    : 	Ident								            	{ $$ = strdup(yytext); };

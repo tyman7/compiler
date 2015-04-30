@@ -22,28 +22,45 @@ struct ExprRes *  doIntLit(char * digits)  {
   res = (struct ExprRes *) malloc(sizeof(struct ExprRes));
   res->Reg = AvailTmpReg();
   res->Instrs = GenInstr(NULL,"li",TmpRegName(res->Reg),digits,NULL);
-
+  res->Type = TYPE_INT;
   return res;
 }
 
-struct ExprRes *  doRval(char * name)  { 
+struct ExprRes * doBoolLit(int bol){
+    struct ExprRes *res;
+    res = (struct ExprRes *) malloc(sizeof(struct ExprRes));
+    res->Reg = AvailTmpReg();
+    res->Type = TYPE_BOOL;
+    if( bol ){
+        res->Instrs = GenInstr(NULL,"li", TmpRegName(res->Reg),"1",NULL);
+    }
+    else {
+        res->Instrs = GenInstr(NULL, "li", TmpRegName(res->Reg),"0",NULL);
+    }
+    return res;
+}
 
+
+struct ExprRes *  doRval(char * name)  { 
    struct ExprRes *res;
-  
-   if (!FindName(table, name)) {
+   struct SymEntry * e = FindName(table, name); 
+   if (!e) {
 		WriteIndicator(GetCurrentColumn());
 		WriteMessage("Undeclared variable");
    }
+   
   res = (struct ExprRes *) malloc(sizeof(struct ExprRes));
   res->Reg = AvailTmpReg();
   res->Instrs = GenInstr(NULL,"lw",TmpRegName(res->Reg),name,NULL);
-
+  res->Type = ((struct Vtype *)e->Attributes)->Type;
   return res;
 }
 
 struct ExprRes *  doAdd(struct ExprRes * Res1, struct ExprRes * Res2)  { 
-
-   int reg;
+    if(Res1->Type != TYPE_INT || Res2->Type != TYPE_INT){
+        TypeError();
+    }
+  int reg;
    
   reg = AvailTmpReg();
   AppendSeq(Res1->Instrs,Res2->Instrs);
@@ -59,8 +76,12 @@ struct ExprRes *  doAdd(struct ExprRes * Res1, struct ExprRes * Res2)  {
 }
 
 struct ExprRes * doBinaryMinus(struct ExprRes * Res1, struct ExprRes * Res2){
+    if(Res1->Type != TYPE_INT || Res2->Type){
+        TypeError();
+    }
+
     int reg;
-    
+   
     reg = AvailTmpReg();
     AppendSeq(Res1->Instrs, Res2->Instrs);
     AppendSeq(Res1->Instrs, GenInstr(NULL,"sub",
@@ -74,7 +95,29 @@ struct ExprRes * doBinaryMinus(struct ExprRes * Res1, struct ExprRes * Res2){
     return Res1;
 }
 
+struct ExprRes * doNot(struct ExprRes * Res){
+    if(Res->Type != TYPE_BOOL){
+        TypeError();
+    }
+    char * fal = GenLabel();
+    char * end = GenLabel();
+
+    AppendSeq(Res->Instrs, GenInstr(NULL, "beq", "$0", TmpRegName(Res->Reg), fal));
+    AppendSeq(Res->Instrs, GenInstr(NULL, "li", TmpRegName(Res->Reg), "0", NULL ));
+    AppendSeq(Res->Instrs, GenInstr(NULL, "b", end, NULL,NULL));
+    AppendSeq(Res->Instrs, GenInstr(fal, NULL, NULL, NULL, NULL));
+    AppendSeq(Res->Instrs, GenInstr(NULL, "li", TmpRegName(Res->Reg), "1", NULL ));
+    AppendSeq(Res->Instrs, GenInstr(end, NULL,NULL,NULL,NULL));
+    
+    return Res;
+
+}
+
 struct ExprRes * doNeg(struct ExprRes * Res1){
+    if(Res1->Type != TYPE_INT){
+        TypeError();
+    }
+
     int reg;
     reg = AvailTmpReg();
     AppendSeq(Res1->Instrs, GenInstr(NULL, "sub",
@@ -88,6 +131,9 @@ struct ExprRes * doNeg(struct ExprRes * Res1){
 }
 
 struct ExprRes * doPower(struct ExprRes * Res1, struct ExprRes * Res2) {
+    if(Res1->Type != TYPE_INT || Res2->Type != TYPE_INT){
+        TypeError();
+    }
     int reg;
     reg = AvailTmpReg();
     
@@ -122,7 +168,9 @@ struct ExprRes * doPower(struct ExprRes * Res1, struct ExprRes * Res2) {
 
   }
 struct ExprRes *  doMult(struct ExprRes * Res1, struct ExprRes * Res2)  { 
-
+    if(Res1->Type != TYPE_INT || Res2->Type != TYPE_INT){
+        TypeError();
+    }
    int reg;
    
   reg = AvailTmpReg();
@@ -139,6 +187,11 @@ struct ExprRes *  doMult(struct ExprRes * Res1, struct ExprRes * Res2)  {
 }
 
 struct ExprRes * doDivide(struct ExprRes * Res1, struct ExprRes * Res2){
+    if(Res1->Type != TYPE_INT || Res2->Type != TYPE_INT){
+        TypeError();
+    }
+
+
     int reg;
 
     reg = AvailTmpReg();
@@ -155,6 +208,9 @@ struct ExprRes * doDivide(struct ExprRes * Res1, struct ExprRes * Res2){
 }
 
 struct ExprRes * doMod(struct ExprRes * Res1, struct ExprRes * Res2){
+    if(Res1->Type != TYPE_INT || Res2->Type != TYPE_INT){
+        TypeError();
+    }
     int reg;
 
     reg = AvailTmpReg();
@@ -168,22 +224,44 @@ struct ExprRes * doMod(struct ExprRes * Res1, struct ExprRes * Res2){
     ReleaseTmpReg(Res2->Reg);
     Res1->Reg = reg;
     free(Res2);
+
     return Res1;
 }
 
 struct InstrSeq * doPrint(struct ExprRes * Expr) { 
 
-  struct InstrSeq *code;
-    
-  code = Expr->Instrs;
-  
+   struct InstrSeq *code;
+   
+   code = Expr->Instrs;
+   char * end = GenLabel();
+
+   if (Expr->Type == TYPE_BOOL){
+       
+        char * fal = GenLabel();
+
+        AppendSeq(code,GenInstr(NULL,"li","$v0","4",NULL));
+        
+        AppendSeq(code, GenInstr(NULL, "beq", "$0", TmpRegName(Expr->Reg), fal));
+
+        AppendSeq(code,GenInstr(NULL,"la","$a0","_tru",NULL));
+        AppendSeq(code,GenInstr(NULL,"syscall",NULL,NULL,NULL));
+        AppendSeq(code, GenInstr(NULL, "b", end, NULL, NULL));       
+ 
+        AppendSeq(code, GenInstr(fal, NULL, NULL, NULL, NULL));
+        AppendSeq(code,GenInstr(NULL,"la","$a0","_fal",NULL));
+        AppendSeq(code,GenInstr(NULL,"syscall",NULL,NULL,NULL));    
+   
+   }  
+   else if(Expr->Type == TYPE_INT){
+
     AppendSeq(code,GenInstr(NULL,"li","$v0","1",NULL));
     AppendSeq(code,GenInstr(NULL,"move","$a0",TmpRegName(Expr->Reg),NULL));
     AppendSeq(code,GenInstr(NULL,"syscall",NULL,NULL,NULL));
-
+  }
+    AppendSeq(code,GenInstr(end, NULL,NULL,NULL,NULL));
     AppendSeq(code,GenInstr(NULL,"li","$v0","4",NULL));
     AppendSeq(code,GenInstr(NULL,"la","$a0","_nl",NULL));
-   AppendSeq(code,GenInstr(NULL,"syscall",NULL,NULL,NULL));
+    AppendSeq(code,GenInstr(NULL,"syscall",NULL,NULL,NULL));
 
     ReleaseTmpReg(Expr->Reg);
     free(Expr);
@@ -195,11 +273,15 @@ struct InstrSeq * doAssign(char *name, struct ExprRes * Expr) {
 
   struct InstrSeq *code;
   
-
-   if (!FindName(table, name)) {
+   struct SymEntry * e = FindName(table,name);
+   if (!e) {
 		WriteIndicator(GetCurrentColumn());
 		WriteMessage("Undeclared variable");
    }
+   if( ((struct Vtype *)e->Attributes)->Type != Expr->Type){
+       TypeError();
+   }
+ 
 
   code = Expr->Instrs;
   
@@ -211,25 +293,15 @@ struct InstrSeq * doAssign(char *name, struct ExprRes * Expr) {
   return code;
 }
 
-extern struct BExprRes * doBExpr(struct ExprRes * Res1,  struct ExprRes * Res2) {
-	struct BExprRes * bRes;
-	AppendSeq(Res1->Instrs, Res2->Instrs);
- 	bRes = (struct BExprRes *) malloc(sizeof(struct BExprRes));
-	bRes->Label = GenLabel();
-	AppendSeq(Res1->Instrs, GenInstr(NULL, "bne", TmpRegName(Res1->Reg), TmpRegName(Res2->Reg), bRes->Label));
-	bRes->Instrs = Res1->Instrs;
-	ReleaseTmpReg(Res1->Reg);
-  	ReleaseTmpReg(Res2->Reg);
-	free(Res1);
-	free(Res2);
-	return bRes;
-}
-
 extern struct ExprRes * doRelOp(struct ExprRes * Res1, struct ExprRes * Res2, int op){
-    
+    printf("res1 = %d, res2 = %d", Res1->Type, Res2->Type);
+    if(Res1->Type != TYPE_INT || Res2->Type != TYPE_INT){
+        TypeError();
+    }
+
     struct InstrSeq * iseq;
     char * t_res = GenLabel();
-    
+   
     char * end = GenLabel();
     int reg = AvailTmpReg();
 
@@ -268,6 +340,7 @@ extern struct ExprRes * doRelOp(struct ExprRes * Res1, struct ExprRes * Res2, in
     free(end);
     free(Res2);
     Res1->Reg = reg;
+    Res1->Type = TYPE_BOOL;
     return Res1;
 }
 
@@ -276,6 +349,30 @@ extern struct InstrSeq * doIf(struct ExprRes * bRes, struct InstrSeq * seq) {
 	return NULL;
 }
 
+void IntDec(char * VarName){
+    struct Vtype * vtype = malloc(sizeof(struct Vtype ));
+    struct SymEntry * e;
+    vtype->Type = TYPE_INT;
+    vtype->Size = 1;
+    EnterName(table, VarName, &e);
+    SetAttr(e,(void*)vtype);
+}
+
+void BoolDec(char * VarName){
+
+    struct Vtype * vtype = malloc(sizeof(struct Vtype));
+    struct SymEntry *e;
+    vtype->Type = TYPE_BOOL;
+    vtype->Size = 1;
+    EnterName(table, VarName, &e);
+    SetAttr(e, (void*)vtype);
+}
+
+void TypeError(){
+    WriteIndicator(GetCurrentColumn());
+    WriteMessage("Conflicting Types");
+    exit(1);
+}
 /*
 
 extern struct InstrSeq * doIf(struct ExprRes *res1, struct ExprRes *res2, struct InstrSeq * seq) {
@@ -310,6 +407,8 @@ Finish(struct InstrSeq *Code)
   AppendSeq(code,GenInstr(NULL,".data",NULL,NULL,NULL));
   AppendSeq(code,GenInstr(NULL,".align","4",NULL,NULL));
   AppendSeq(code,GenInstr("_nl",".asciiz","\"\\n\"",NULL,NULL));
+  AppendSeq(code,GenInstr("_tru",".asciiz","\"true\"",NULL,NULL));
+  AppendSeq(code,GenInstr("_fal",".asciiz","\"false\"",NULL,NULL));
 
  entry = FirstEntry(table);
  while (entry) {
