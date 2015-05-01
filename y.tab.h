@@ -56,7 +56,9 @@ extern int yydebug;
     LTEQ = 266,
     NEQ = 267,
     Tru = 268,
-    Fal = 269
+    Fal = 269,
+    AND = 270,
+    OR = 271
   };
 #endif
 /* Tokens.  */
@@ -72,6 +74,8 @@ extern int yydebug;
 #define NEQ 267
 #define Tru 268
 #define Fal 269
+#define AND 270
+#define OR 271
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -86,7 +90,7 @@ union YYSTYPE
   struct InstrSeq * InstrSeq;
   struct BExprRes * BExprRes;
 
-#line 90 "y.tab.h" /* yacc.c:1909  */
+#line 94 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

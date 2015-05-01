@@ -27,6 +27,8 @@ print				        	{return Write;}
 \>\=                            {return GTEQ;}
 \<\=                            {return LTEQ;}
 \!\=                            {return NEQ;}
+\&\&                            {return AND;}
+\|\|                            {return OR;}
 \<                              {return '<';}
 \>                              {return '>';}
 \=		               			{return '=';}

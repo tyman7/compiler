@@ -56,6 +56,32 @@ struct ExprRes *  doRval(char * name)  {
   return res;
 }
 
+struct ExprRes * doOr(struct ExprRes * Res1, struct ExprRes * Res2){
+    if(Res1->Type != TYPE_BOOL || Res2->Type != TYPE_BOOL){
+        TypeError();
+    }
+    
+    AppendSeq(Res1->Instrs, Res2->Instrs);
+    AppendSeq(Res1->Instrs, GenInstr(NULL, "or", TmpRegName(Res1->Reg), TmpRegName(Res1->Reg), TmpRegName(Res2->Reg)));
+    ReleaseTmpReg(Res2->Reg);
+    free(Res2);
+    return Res1;
+}
+
+struct ExprRes * doAnd(struct ExprRes * Res1, struct ExprRes * Res2){
+    if(Res1->Type != TYPE_BOOL || Res2->Type != TYPE_BOOL){
+        TypeError();
+    }
+    
+    AppendSeq(Res1->Instrs, Res2->Instrs);
+    AppendSeq(Res1->Instrs, GenInstr(NULL, "and", TmpRegName(Res1->Reg), TmpRegName(Res1->Reg), TmpRegName(Res2->Reg)));
+    ReleaseTmpReg(Res2->Reg);
+    free(Res2);
+    return Res1;
+}
+
+
+
 struct ExprRes *  doAdd(struct ExprRes * Res1, struct ExprRes * Res2)  { 
     if(Res1->Type != TYPE_INT || Res2->Type != TYPE_INT){
         TypeError();

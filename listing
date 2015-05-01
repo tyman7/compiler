@@ -1,9 +1,5 @@
 1. bool i;
-2. bool k;
-3. 
-4. k = true;
-5. i = !k;
-6. 
-7. 
-8. print k;
-9. print i;
+2. 
+3. i = (false || true) && (false || true);
+4. 
+5. print i;

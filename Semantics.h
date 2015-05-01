@@ -52,6 +52,9 @@ extern struct ExprRes * doNeg(struct ExprRes * Res1);
 extern struct ExprRes * doPower(struct ExprRes * Res1, struct ExprRes *Res2);
 extern struct ExprRes * doRelOp(struct ExprRes * Res1, struct ExprRes * Res2, int op);
 extern struct ExprRes * doNot(struct ExprRes * Res);
+extern struct ExprRes * doOr(struct ExprRes * Res1, struct ExprRes * Res2);
+extern struct ExprRes * doAnd(struct ExprRes * Res1, struct ExprRes * Res2);
+
 
 extern void IntDec(char* VarName);
 extern void BoolDec(char * VarName);

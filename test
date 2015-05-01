@@ -1,9 +1,5 @@
 bool i;
-bool k;
 
-k = true;
-i = !k;
+i = (false || true) && (false || true);
 
-
-print k;
 print i;
