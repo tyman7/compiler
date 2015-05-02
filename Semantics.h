@@ -8,6 +8,8 @@
 #define TYPE_INT 1
 #define TYPE_STR 2
 
+extern struct StrLabels * slabels; 
+
 struct Vtype {
     int Type;
     int Size;
@@ -27,6 +29,12 @@ struct ExprRes {
 struct ExprResList {
 	struct ExprRes *Expr;
 	struct ExprResList * Next;
+};
+
+struct StrLabels {
+    char * Str;
+    char * SLabel;
+    struct StrLabels * next;
 };
 
 struct BExprRes {
@@ -55,6 +63,10 @@ extern struct ExprRes * doNot(struct ExprRes * Res);
 extern struct ExprRes * doOr(struct ExprRes * Res1, struct ExprRes * Res2);
 extern struct ExprRes * doAnd(struct ExprRes * Res1, struct ExprRes * Res2);
 
+extern struct InstrSeq * doPrintsp(struct ExprRes *Expr);
+extern struct InstrSeq * doPrintln();
+extern struct InstrSeq * doPrintSeq(struct ExprRes *Expr, struct InstrSeq * Seq);
+extern struct ExprRes * doStrLit(char * str);
 
 extern void IntDec(char* VarName);
 extern void BoolDec(char * VarName);

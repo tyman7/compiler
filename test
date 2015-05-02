@@ -1,5 +1,20 @@
 bool i;
+int j;
+int k;
+bool l;
+int c;
 
 i = (false || true) && (false || true);
+j = 4;
+k = 5;
+l = 5 > 6;
 
-print i;
+print 7 > 4;
+println;
+print l;
+println;
+print i, j;
+printsp 8;
+print k;
+println;
+print "hello world", "Nick Sucks";

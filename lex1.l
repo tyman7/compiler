@@ -15,6 +15,9 @@ letter [A-Za-z]
 digit [0-9]
 
 %%
+\"(\\.|[^"\\])*\"               {return STR;}
+printsp                         {return WriteSp;}
+println                         {return WriteLn;}
 true                            {return Tru;}
 false                           {return Fal;}
 if				            	{return IF;}
@@ -44,6 +47,7 @@ print				        	{return Write;}
 \%                              {return '%';}
 \^                              {return '^';}
 \!                              {return '!';}
+\,                              {return ',';}
 [ ]			                	{}
 \t			                   	{}
 \r			                	{}

@@ -36,6 +36,7 @@ extern struct SymEntry *entry;
 %type <ExprRes> ATerm
 %type <ExprRes> OTerm
 %type <ExprRes> Expr
+%type <InstrSeq> PExpr 
 %type <InstrSeq> StmtSeq
 %type <InstrSeq> Stmt
 
@@ -56,6 +57,10 @@ extern struct SymEntry *entry;
 %token Fal
 %token AND
 %token OR
+%token WriteSp
+%token WriteLn
+%token STR
+
 
 %%
 
@@ -66,10 +71,13 @@ Dec		    	:	Int Id ';'                                       	{IntDec($2); };
 Dec             :   Bool Id ';'                                         {BoolDec($2); };          
 StmtSeq 		:	Stmt StmtSeq								        {$$ = AppendSeq($1, $2); };
 StmtSeq	    	:											            {$$ = NULL; };
-Stmt			:	Write Expr ';'								        {$$ = doPrint($2); };
+Stmt			:	Write PExpr ';'								        {$$ = $2; };
+Stmt            :   WriteSp Expr ';'                                    {$$ = doPrintsp($2); };
+Stmt            :   WriteLn ';'                                         {$$ = doPrintln();};
 Stmt			:	Id '=' Expr ';'							        	{$$ = doAssign($1, $3); };
 Stmt			:	IF '(' Expr ')' '{' StmtSeq '}'	    		    	{$$ = doIf($3, $6); };
-
+PExpr           :   Expr ',' PExpr                                      {$$ = doPrintSeq($1, $3); };
+PExpr           :   Expr                                                {$$ = doPrint($1); };
 Expr            :   Expr OR OTerm                                       {$$ = doOr($1, $3); };
 Expr            :   OTerm                                               {$$ = $1; };
 OTerm           :   OTerm AND ATerm                                     {$$ = doAnd($1, $3); };
@@ -98,6 +106,7 @@ NegTerm         :   '!' Factor                                          { $$ = d
 NegTerm         :   Factor                                              { $$ = $1; };
 Factor          :   Tru                                                 { $$ = doBoolLit(1); };
 Factor          :   Fal                                                 { $$ = doBoolLit(0); };
+Factor          :   STR                                                 { $$ = doStrLit(yytext ); };
 Factor		    :	IntLit								            	{ $$ = doIntLit(yytext); };
 Factor          :   '(' Expr ')'                                        { $$ = $2; };
 Factor		    :	Ident								            	{ $$ = doRval(yytext); };

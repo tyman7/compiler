@@ -1,5 +1,20 @@
 1. bool i;
-2. 
-3. i = (false || true) && (false || true);
-4. 
-5. print i;
+2. int j;
+3. int k;
+4. bool l;
+5. int c;
+6. 
+7. i = (false || true) && (false || true);
+8. j = 4;
+9. k = 5;
+10. l = 5 > 6;
+11. 
+12. print 7 > 4;
+13. println;
+14. print l;
+15. println;
+16. print i, j;
+17. printsp 8;
+18. print k;
+19. println;
+20. print "hello world", "Nick Sucks";
