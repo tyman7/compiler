@@ -136,12 +136,10 @@ struct ExprRes * doBinaryMinus(struct ExprRes * Res1, struct ExprRes * Res2){
     reg = AvailTmpReg();
     AppendSeq(Res1->Instrs, Res2->Instrs);
     AppendSeq(Res1->Instrs, GenInstr(NULL,"sub",
-                                               TmpRegName(reg),
+                                               TmpRegName(Res1->Reg),
                                                TmpRegName(Res1->Reg),
                                                TmpRegName(Res2->Reg)));
-    ReleaseTmpReg(Res1->Reg);
     ReleaseTmpReg(Res2->Reg);
-    Res1->Reg = reg;
     free(Res2);
     return Res1;
 }
@@ -499,7 +497,23 @@ void TypeError(){
 }
 
 extern struct InstrSeq * doWhile(struct ExprRes *res, struct InstrSeq *seq){
-    return seq;
+    if( res->Type != TYPE_BOOL){
+        TypeError();
+    }
+    struct InstrSeq * code;
+    char * loop = GenLabel();
+    char * end = GenLabel();
+    code = GenInstr(loop, NULL, NULL, NULL, NULL);
+    AppendSeq(code, res->Instrs);
+    AppendSeq(code, GenInstr(NULL, "beq", TmpRegName(res->Reg), "$0", end));
+    AppendSeq(code, seq);
+    AppendSeq(code, GenInstr(NULL, "b", loop, NULL, NULL));
+    AppendSeq(code, GenInstr(end, NULL, NULL, NULL, NULL));
+    ReleaseTmpReg(res->Reg);
+    free(res);
+    free(loop);
+    free(end);
+    return code;
 }
 
 extern struct InstrSeq * doIf(struct ExprRes *res, struct InstrSeq *seq){
