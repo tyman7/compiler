@@ -18,8 +18,6 @@ extern struct SymTab *table;
 //music - exposions in the sky
 //drying of the lawns
 
-
-
 struct ExprRes * doStrLit(char * str){
     struct ExprRes *res;
     struct StrLabels * strl;
@@ -48,10 +46,15 @@ struct ExprRes *  doIntLit(char * digits)  {
 }
 
 struct ExprRes * doBoolLit(int bol){
+    if ( bol != 1 && bol != 0){
+        TypeError();
+    }
+    
     struct ExprRes *res;
     res = (struct ExprRes *) malloc(sizeof(struct ExprRes));
     res->Reg = AvailTmpReg();
     res->Type = TYPE_BOOL;
+    
     if( bol ){
         res->Instrs = GenInstr(NULL,"li", TmpRegName(res->Reg),"1",NULL);
     }
@@ -68,6 +71,7 @@ struct ExprRes *  doRval(char * name)  {
    if (!e) {
 		WriteIndicator(GetCurrentColumn());
 		WriteMessage("Undeclared variable");
+        exit(1); //doing something stupid like "print ln;" will cause me to segfault if we don't quit
    }
    
   res = (struct ExprRes *) malloc(sizeof(struct ExprRes));
@@ -123,7 +127,7 @@ struct ExprRes *  doAdd(struct ExprRes * Res1, struct ExprRes * Res2)  {
 }
 
 struct ExprRes * doBinaryMinus(struct ExprRes * Res1, struct ExprRes * Res2){
-    if(Res1->Type != TYPE_INT || Res2->Type){
+    if(Res1->Type != TYPE_INT || Res2->Type != TYPE_INT ){
         TypeError();
     }
 
@@ -385,9 +389,10 @@ struct InstrSeq * doAssign(char *name, struct ExprRes * Expr) {
 		WriteIndicator(GetCurrentColumn());
 		WriteMessage("Undeclared variable");
    }
-   if( ((struct Vtype *)e->Attributes)->Type != Expr->Type){
+   if(  Expr->Type != -1 &&  ((struct Vtype *)e->Attributes)->Type != Expr->Type){
        TypeError();
    }
+
  
 
   code = Expr->Instrs;
@@ -400,8 +405,23 @@ struct InstrSeq * doAssign(char *name, struct ExprRes * Expr) {
   return code;
 }
 
+
+struct InstrSeq * doRead(char * VarName){
+    struct ExprRes* res = malloc(sizeof(struct ExprRes ) );
+    res->Reg = AvailTmpReg();
+    res->Type = -1;
+    res->Instrs = GenInstr(NULL, "li", "$v0", "5", NULL);
+    AppendSeq(res->Instrs, GenInstr(NULL,"syscall", NULL, NULL, NULL));
+    AppendSeq(res->Instrs, GenInstr(NULL, "move", TmpRegName( res->Reg ), "$v0", NULL));
+
+    return doAssign( VarName, res);
+}
+
+
+
+
 extern struct ExprRes * doRelOp(struct ExprRes * Res1, struct ExprRes * Res2, int op){
-    printf("res1 = %d, res2 = %d", Res1->Type, Res2->Type);
+    
     if(Res1->Type != TYPE_INT || Res2->Type != TYPE_INT){
         TypeError();
     }
@@ -452,9 +472,6 @@ extern struct ExprRes * doRelOp(struct ExprRes * Res1, struct ExprRes * Res2, in
 }
 
 
-extern struct InstrSeq * doIf(struct ExprRes * bRes, struct InstrSeq * seq) {
-	return NULL;
-}
 
 void IntDec(char * VarName){
     struct Vtype * vtype = malloc(sizeof(struct Vtype ));
@@ -480,24 +497,57 @@ void TypeError(){
     WriteMessage("Conflicting Types");
     exit(1);
 }
-/*
 
-extern struct InstrSeq * doIf(struct ExprRes *res1, struct ExprRes *res2, struct InstrSeq * seq) {
-	struct InstrSeq *seq2;
-	char * label;
-	label = GenLabel();
-	AppendSeq(res1->Instrs, res2->Instrs);
-	AppendSeq(res1->Instrs, GenInstr(NULL, "bne", TmpRegName(res1->Reg), TmpRegName(res2->Reg), label));
-	seq2 = AppendSeq(res1->Instrs, seq);
-	AppendSeq(seq2, GenInstr(label, NULL, NULL, NULL, NULL));
-	ReleaseTmpReg(res1->Reg);
-  	ReleaseTmpReg(res2->Reg);
-	free(res1);
-	free(res2);
-	return seq2;
+extern struct InstrSeq * doWhile(struct ExprRes *res, struct InstrSeq *seq){
+    return seq;
 }
 
-*/
+extern struct InstrSeq * doIf(struct ExprRes *res, struct InstrSeq *seq){
+    if(res->Type != TYPE_BOOL){
+        TypeError();
+    }
+
+    
+    struct InstrSeq *code;
+    code = res->Instrs;
+    char * label;
+    label = GenLabel();
+    AppendSeq(code, GenInstr(NULL, "beq", TmpRegName(res->Reg), "$0",label ));
+    AppendSeq(code, seq);
+    AppendSeq(code, GenInstr(label, NULL,NULL,NULL,NULL));
+    ReleaseTmpReg(res->Reg);
+    free(res);
+    free(label);
+    return code;
+
+}
+
+
+extern struct InstrSeq * doIfElse(struct ExprRes *res, struct InstrSeq * iseq, struct InstrSeq *eseq){
+    if(res->Type != TYPE_BOOL){
+        TypeError();
+    }
+    struct InstrSeq * code;
+    code = res->Instrs;
+    char * else_label = GenLabel();
+    char *end = GenLabel();
+   
+    AppendSeq(code, GenInstr(NULL, "beq", TmpRegName(res->Reg), "$0", else_label));
+    AppendSeq(code, iseq);
+    AppendSeq(code, GenInstr(NULL, "b", end,NULL,NULL));
+    AppendSeq(code, GenInstr(else_label, NULL,NULL,NULL,NULL));
+    AppendSeq(code, eseq);
+    AppendSeq(code, GenInstr(end, NULL,NULL,NULL,NULL));
+
+    ReleaseTmpReg(res->Reg);
+    free(res);
+    free(else_label);
+    free(end);
+    return code;
+
+}
+
+
 void							 
 Finish(struct InstrSeq *Code)
 { struct InstrSeq *code;

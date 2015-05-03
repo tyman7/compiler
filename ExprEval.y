@@ -36,12 +36,14 @@ extern struct SymEntry *entry;
 %type <ExprRes> ATerm
 %type <ExprRes> OTerm
 %type <ExprRes> Expr
-%type <InstrSeq> PExpr 
+%type <InstrSeq> PExpr
+%type <InstrSeq> RExpr
 %type <InstrSeq> StmtSeq
 %type <InstrSeq> Stmt
-
 %type <ExprRes> NegTerm
 %type <ExprRes> ExpTerm
+%type <InstrSeq> RExprSeq
+
 
 %token Ident 		
 %token IntLit 	
@@ -60,7 +62,9 @@ extern struct SymEntry *entry;
 %token WriteSp
 %token WriteLn
 %token STR
-
+%token Read
+%token Else
+%token While
 
 %%
 
@@ -71,11 +75,18 @@ Dec		    	:	Int Id ';'                                       	{IntDec($2); };
 Dec             :   Bool Id ';'                                         {BoolDec($2); };          
 StmtSeq 		:	Stmt StmtSeq								        {$$ = AppendSeq($1, $2); };
 StmtSeq	    	:											            {$$ = NULL; };
+Stmt            :   While '('Expr')' '{'StmtSeq '}'                     {$$ = doWhile($3, $6); };
+
 Stmt			:	Write PExpr ';'								        {$$ = $2; };
 Stmt            :   WriteSp Expr ';'                                    {$$ = doPrintsp($2); };
 Stmt            :   WriteLn ';'                                         {$$ = doPrintln();};
 Stmt			:	Id '=' Expr ';'							        	{$$ = doAssign($1, $3); };
 Stmt			:	IF '(' Expr ')' '{' StmtSeq '}'	    		    	{$$ = doIf($3, $6); };
+Stmt            :   IF '(' Expr ')' '{' StmtSeq '}' Else '{'StmtSeq'}'  {$$ = doIfElse($3, $6, $10); }; 
+Stmt            :   Read '(' RExprSeq ')' ';'                           {$$ = $3; };
+RExprSeq        :   RExpr ',' RExprSeq                                  {$$ = AppendSeq($1,$3); };
+RExprSeq        :   RExpr                                               {$$ = $1; };
+RExpr           :   Id                                                  {$$ = doRead($1); };
 PExpr           :   Expr ',' PExpr                                      {$$ = doPrintSeq($1, $3); };
 PExpr           :   Expr                                                {$$ = doPrint($1); };
 Expr            :   Expr OR OTerm                                       {$$ = doOr($1, $3); };

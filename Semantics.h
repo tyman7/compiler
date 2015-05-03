@@ -54,6 +54,7 @@ extern struct ExprRes *  doMult(struct ExprRes * Res1,  struct ExprRes * Res2);
 extern struct InstrSeq *  doPrint(struct ExprRes * Expr);
 
 extern struct InstrSeq * doIf(struct ExprRes *bRes, struct InstrSeq * seq);
+extern struct InstrSeq * doIfElse(struct ExprRes * res, struct InstrSeq *iseq, struct InstrSeq * eseq);
 extern struct ExprRes * doDivide(struct ExprRes * Res1, struct ExprRes * Res2);
 extern struct ExprRes * doMod(struct ExprRes * Res1, struct ExprRes * Res2);
 extern struct ExprRes * doNeg(struct ExprRes * Res1);
@@ -63,10 +64,14 @@ extern struct ExprRes * doNot(struct ExprRes * Res);
 extern struct ExprRes * doOr(struct ExprRes * Res1, struct ExprRes * Res2);
 extern struct ExprRes * doAnd(struct ExprRes * Res1, struct ExprRes * Res2);
 
+extern struct InstrSeq * doWhile(struct ExprRes * res, struct InstrSeq *seq);
+
 extern struct InstrSeq * doPrintsp(struct ExprRes *Expr);
 extern struct InstrSeq * doPrintln();
 extern struct InstrSeq * doPrintSeq(struct ExprRes *Expr, struct InstrSeq * Seq);
 extern struct ExprRes * doStrLit(char * str);
+
+extern struct InstrSeq * doRead(char * VarName);
 
 extern void IntDec(char* VarName);
 extern void BoolDec(char * VarName);

@@ -15,12 +15,15 @@ letter [A-Za-z]
 digit [0-9]
 
 %%
+while                           {return While;}
+read                            {return Read;}
 \"(\\.|[^"\\])*\"               {return STR;}
 printsp                         {return WriteSp;}
 println                         {return WriteLn;}
 true                            {return Tru;}
 false                           {return Fal;}
 if				            	{return IF;}
+else                            {return Else;}
 int			    	           	{return Int;}
 bool                            {return Bool;}
 print				        	{return Write;}
