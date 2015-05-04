@@ -64,6 +64,39 @@ struct ExprRes * doBoolLit(int bol){
     return res;
 }
 
+struct ExprRes * doArrayRval(char * name, struct  ExprRes * index){
+    int reg = AvailTmpReg();
+    struct SymEntry * e = FindName(table, name);
+    if( !e ){
+        WriteIndicator(GetCurrentColumn());
+        WriteMessage("Undeclared variable");
+        exit(1);
+    }
+
+    if(index->Type != TYPE_INT){
+        TypeError();
+    }
+    char * buffer = RegOff(0, TmpRegName(reg));
+    struct Vtype * vtype = ((struct Vtype *)e->Attributes);
+
+
+    //change later for variable locality
+
+    AppendSeq(index->Instrs, GenInstr( NULL, "la", TmpRegName(reg), name, NULL));
+    AppendSeq(index->Instrs, GenInstr(NULL, "mul", TmpRegName(index->Reg), TmpRegName(index->Reg), "4"));
+    AppendSeq(index->Instrs, GenInstr(NULL, "add", TmpRegName(reg), TmpRegName(reg), TmpRegName(index->Reg)));
+    AppendSeq(index->Instrs, GenInstr(NULL , "lw", TmpRegName(index->Reg), buffer, NULL));
+
+    if( vtype->Type == TYPE_INTARR){
+        index->Type = TYPE_INT;
+    }
+    else {
+        index->Type = TYPE_BOOL;
+    }
+    ReleaseTmpReg(reg);
+    return index;
+
+}
 
 struct ExprRes *  doRval(char * name)  { 
    struct ExprRes *res;
@@ -376,7 +409,40 @@ struct InstrSeq * doPrintln(){
 
 }
 
+struct InstrSeq * doArrayAssign( char * name, struct ExprRes * index, struct ExprRes * val){
+    
+    struct SymEntry * e = FindName(table, name);
+    struct Vtype * vtype = ((struct Vtype *)e->Attributes);
+    struct InstrSeq * code;
+    int reg = AvailTmpReg();
+    char * buffer;
+    if (!e){
+        WriteIndicator(GetCurrentColumn());
+        WriteMessage("Undeclared variable");
+    }
+    if(index->Type != TYPE_INT){
+        TypeError();
+    }
+    else if( val->Type != -1 && ((vtype->Type ==  TYPE_BOOLARR &&  val->Type != TYPE_BOOL) || (vtype->Type == TYPE_INTARR && val->Type != TYPE_INT ))){
+        TypeError();
+    }
+    buffer = RegOff(0, TmpRegName(reg));
+    code = val->Instrs;
+    AppendSeq(code, index->Instrs);
+    // change for locality later
+    AppendSeq( code, GenInstr( NULL, "la", TmpRegName(reg), name, NULL));
+    AppendSeq( code, GenInstr( NULL, "mul", TmpRegName(index->Reg), TmpRegName(index->Reg), "4"));
+    AppendSeq( code, GenInstr(NULL, "add", TmpRegName(reg), TmpRegName(reg), TmpRegName(index->Reg)));
+    AppendSeq( code, GenInstr(NULL, "sw", TmpRegName(val->Reg), buffer, NULL));
+    ReleaseTmpReg(val->Reg);
+    ReleaseTmpReg(index->Reg);
+    ReleaseTmpReg(reg);
+    free(val);
+    free(index);
 
+    return code;
+    
+}
 
 struct InstrSeq * doAssign(char *name, struct ExprRes * Expr) { 
 
@@ -403,6 +469,15 @@ struct InstrSeq * doAssign(char *name, struct ExprRes * Expr) {
   return code;
 }
 
+struct InstrSeq *doArrayRead( char * VarName, struct ExprRes * index){
+    struct ExprRes * res = malloc(sizeof(struct ExprRes));
+    res->Reg = AvailTmpReg();
+    res->Type = -1;
+    res->Instrs = GenInstr(NULL, "li", "$v0", "5", NULL);
+    AppendSeq(res->Instrs, GenInstr(NULL, "syscall", NULL, NULL, NULL));
+    AppendSeq(res->Instrs, GenInstr(NULL, "move", TmpRegName(res->Reg), "$v0", NULL));
+    return doArrayAssign(VarName, index, res);
+}
 
 struct InstrSeq * doRead(char * VarName){
     struct ExprRes* res = malloc(sizeof(struct ExprRes ) );
@@ -480,12 +555,36 @@ void IntDec(char * VarName){
     SetAttr(e,(void*)vtype);
 }
 
+void IntArrDec(char * VarName, char * Size){
+    
+    int ArraySize = atoi(Size);
+    struct SymEntry *e;
+    struct Vtype * vtype = malloc(sizeof(struct Vtype));
+    vtype->Type = TYPE_INTARR;
+    vtype->Size = ArraySize;
+    EnterName(table, VarName, &e);
+    SetAttr(e, (void*)vtype);
+
+}
+
 void BoolDec(char * VarName){
 
     struct Vtype * vtype = malloc(sizeof(struct Vtype));
     struct SymEntry *e;
     vtype->Type = TYPE_BOOL;
     vtype->Size = 1;
+    EnterName(table, VarName, &e);
+    SetAttr(e, (void*)vtype);
+
+}
+
+void BoolArrDec(char * VarName, char * Size){
+  
+    int ArraySize = atoi(Size);
+    struct SymEntry *e;
+    struct Vtype * vtype = malloc(sizeof(struct Vtype));
+    vtype->Type = TYPE_BOOLARR;
+    vtype->Size = ArraySize;
     EnterName(table, VarName, &e);
     SetAttr(e, (void*)vtype);
 }
@@ -584,8 +683,21 @@ Finish(struct InstrSeq *Code)
 
  entry = FirstEntry(table);
  while (entry) {
-	AppendSeq(code,GenInstr((char *) GetName(entry),".word","0",NULL,NULL));
-        entry = NextEntry(table, entry);
+	 struct Vtype *  vtype = ((struct Vtype *)entry->Attributes);
+     
+     AppendSeq(code, GenInstr(NULL, ".align", "4", NULL, NULL));
+
+     if(vtype->Type == TYPE_INTARR || vtype->Type == TYPE_BOOLARR){
+        char * buffer;
+        buffer = Imm(4 * vtype->Size);
+        AppendSeq(code, GenInstr( (char*)GetName(entry), ".space", buffer, NULL, NULL));
+
+     }
+     else {
+         AppendSeq(code,GenInstr((char *) GetName(entry),".word","0",NULL,NULL));
+     }
+    
+    entry = NextEntry(table, entry);
  }
  strlabel = slabels;
  

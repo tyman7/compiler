@@ -7,6 +7,8 @@
 #define TYPE_BOOL 0
 #define TYPE_INT 1
 #define TYPE_STR 2
+#define TYPE_INTARR 3
+#define TYPE_BOOLARR 4
 
 extern struct StrLabels * slabels; 
 
@@ -45,7 +47,7 @@ struct BExprRes {
 
 /* Semantics Actions */
 extern struct ExprRes * doBoolLit(int bol);
-extern struct ExprRes *  doIntLit(char * digits);
+extern struct ExprRes *  doIntLit(char *  digits);
 extern struct ExprRes *  doRval(char * name);
 extern struct InstrSeq *  doAssign(char * name,  struct ExprRes * Res1);
 extern struct ExprRes *  doAdd(struct ExprRes * Res1,  struct ExprRes * Res2);
@@ -71,9 +73,18 @@ extern struct InstrSeq * doPrintln();
 extern struct InstrSeq * doPrintSeq(struct ExprRes *Expr, struct InstrSeq * Seq);
 extern struct ExprRes * doStrLit(char * str);
 
+extern struct InstrSeq * doArrayAssign(char * name, struct ExprRes * index, struct ExprRes * val);
+extern struct InstrSeq * doArrayRead(char * VarName, struct ExprRes * index);
 extern struct InstrSeq * doRead(char * VarName);
+extern struct ExprRes * doArrayRval(char * name, struct ExprRes * index);
 
+extern void IntArrDec(char * VarName, char * Size);
+extern void BoolArrDec(char * VarName, char * Size);
 extern void IntDec(char* VarName);
 extern void BoolDec(char * VarName);
 extern void TypeError();
 extern void	Finish(struct InstrSeq *Code);
+
+
+
+

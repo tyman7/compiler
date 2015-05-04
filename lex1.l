@@ -35,6 +35,8 @@ print				        	{return Write;}
 \!\=                            {return NEQ;}
 \&\&                            {return AND;}
 \|\|                            {return OR;}
+\[                              {return '[';}
+\]                              {return ']';}
 \<                              {return '<';}
 \>                              {return '>';}
 \=		               			{return '=';}

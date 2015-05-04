@@ -43,7 +43,7 @@ extern struct SymEntry *entry;
 %type <ExprRes> NegTerm
 %type <ExprRes> ExpTerm
 %type <InstrSeq> RExprSeq
-
+%type <string> ValInt
 
 %token Ident 		
 %token IntLit 	
@@ -72,7 +72,9 @@ Prog			:	Declarations StmtSeq						        {Finish($2); };
 Declarations	:	Dec Declarations							        { };
 Declarations	:											            { };
 Dec		    	:	Int Id ';'                                       	{IntDec($2); };
-Dec             :   Bool Id ';'                                         {BoolDec($2); };          
+Dec             :   Bool Id ';'                                         {BoolDec($2); };
+Dec             :   Int Id '[' ValInt ']' ';'                           {IntArrDec($2,$4); };
+Dec             :   Bool Id '[' ValInt ']' ';'                            {BoolArrDec($2,$4); };
 StmtSeq 		:	Stmt StmtSeq								        {$$ = AppendSeq($1, $2); };
 StmtSeq	    	:											            {$$ = NULL; };
 Stmt            :   While '('Expr')' '{'StmtSeq '}'                     {$$ = doWhile($3, $6); };
@@ -81,12 +83,15 @@ Stmt			:	Write PExpr ';'								        {$$ = $2; };
 Stmt            :   WriteSp Expr ';'                                    {$$ = doPrintsp($2); };
 Stmt            :   WriteLn ';'                                         {$$ = doPrintln();};
 Stmt			:	Id '=' Expr ';'							        	{$$ = doAssign($1, $3); };
+Stmt            :   Id '[' Expr ']' '=' Expr ';'                        {$$ = doArrayAssign($1,$3,$6); };
+
 Stmt			:	IF '(' Expr ')' '{' StmtSeq '}'	    		    	{$$ = doIf($3, $6); };
 Stmt            :   IF '(' Expr ')' '{' StmtSeq '}' Else '{'StmtSeq'}'  {$$ = doIfElse($3, $6, $10); }; 
 Stmt            :   Read '(' RExprSeq ')' ';'                           {$$ = $3; };
 RExprSeq        :   RExpr ',' RExprSeq                                  {$$ = AppendSeq($1,$3); };
 RExprSeq        :   RExpr                                               {$$ = $1; };
 RExpr           :   Id                                                  {$$ = doRead($1); };
+RExpr           :   Id '[' Expr ']'                                     {$$ = doArrayRead($1, $3); };
 PExpr           :   Expr ',' PExpr                                      {$$ = doPrintSeq($1, $3); };
 PExpr           :   Expr                                                {$$ = doPrint($1); };
 Expr            :   Expr OR OTerm                                       {$$ = doOr($1, $3); };
@@ -118,9 +123,11 @@ NegTerm         :   Factor                                              { $$ = $
 Factor          :   Tru                                                 { $$ = doBoolLit(1); };
 Factor          :   Fal                                                 { $$ = doBoolLit(0); };
 Factor          :   STR                                                 { $$ = doStrLit(yytext ); };
-Factor		    :	IntLit								            	{ $$ = doIntLit(yytext); };
+Factor		    :   ValInt                                              { $$ = doIntLit($1) ; };
+ValInt          :   IntLit	          						            { $$ = strdup(yytext); };
 Factor          :   '(' Expr ')'                                        { $$ = $2; };
-Factor		    :	Ident								            	{ $$ = doRval(yytext); };
+Factor		    :	Id								                 	{ $$ = doRval($1); };
+Factor          :   Id '[' Expr ']'                                     { $$ = doArrayRval($1, $3); };
 Id			    : 	Ident								            	{ $$ = strdup(yytext); };
  
 %%
