@@ -10,13 +10,18 @@ struct SymTab *table;
 struct SymTab *ProcSymTab;
 struct SymEntry *entry;
 struct StrLabels * slabels;
+struct SymTab *locTable;
 
+int StackPointer= 0;
 int inProc =0;
+int global =0;
 FILE *aFile;
 
 int main(int argc, char * argv[]) {
 	table = CreateSymTab(33);
     ProcSymTab = CreateSymTab(33);
+    locTable = NULL;
+
 	//assumes there is a listing file
 	slabels = NULL;
     OpenFiles(argv[1], argv[2]);

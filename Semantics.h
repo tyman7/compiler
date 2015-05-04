@@ -15,6 +15,8 @@ extern struct StrLabels * slabels;
 struct Vtype {
     int Type;
     int Size;
+    int Local;
+    int StackIndex;
 };
 
 struct IdList {

@@ -2,16 +2,19 @@
 2. 
 3. def int test()
 4. {
-5.     return 2 + 2;
-6. }
-7. 
-8. def int printval()
-9. {
-10.     print i;
-11. }
-12. def int main()
-13. {
-14.     i = test();
-15.     call printval();
-16. }
-17. 
+5.     int j;
+6.     j = 9;
+7.     print j;
+8.     return 2 + 2;
+9. }
+10. 
+11. def int printval()
+12. {
+13.     print i;
+14. }
+15. def int main()
+16. {
+17.     i = test();
+18.     call printval();
+19. }
+20. 

@@ -12,6 +12,13 @@ main:
 	li		$v0, 10
 	syscall	
 _test:
+	li		$t0, 9
+	sw		$t0, j
+	lw		$t0, j
+	li		$v0, 1
+	move		$a0, $t0
+	syscall	
+L1:
 	li		$t0, 2
 	li		$t1, 2
 	add		$t2, $t0, $t1
@@ -23,7 +30,7 @@ _printval:
 	li		$v0, 1
 	move		$a0, $t0
 	syscall	
-L1:
+L2:
 	jr		$ra
 _main:
 	subu		$sp, $sp, 8
@@ -52,3 +59,5 @@ _fal:	.asciiz		"false"
 _sp:	.asciiz		" "
 	.align		4
 i:	.word		0
+	.align		4
+j:	.word		0

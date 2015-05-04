@@ -78,14 +78,14 @@ Declarations	:	Dec Declarations							        { };
 Declarations	:											            { };
 FSeq            :   FDec FSeq                                           {$$ = AppendSeq($1, $2);};
 FSeq            :                                                       {$$ = NULL;};
-FDec            :   Def Int Id '(' ')'                                  {FuncInit($3, TYPE_INT);}
-                    '{' StmtSeq '}'                                     {$$ = FuncDec($3, $8);};
-FDec            :   Def Bool Id '(' ')'                                 {FuncInit($3, TYPE_BOOL); }
-                    '{' StmtSeq '}'                                     {$$ = FuncDec($3, $8); };
+FDec            :   Def Int Id '(' ')' '{' Declarations                 {FuncInit($3, TYPE_INT);}
+                     StmtSeq '}'                                        {$$ = FuncDec($3, $9);};
+FDec            :   Def Bool Id '(' ')' '{' Declarations                {FuncInit($3, TYPE_BOOL); }
+                     StmtSeq '}'                                        {$$ = FuncDec($3, $9); };
 Dec		    	:	Int Id ';'                                       	{IntDec($2); };
 Dec             :   Bool Id ';'                                         {BoolDec($2); };
 Dec             :   Int Id '[' ValInt ']' ';'                           {IntArrDec($2,$4); };
-Dec             :   Bool Id '[' ValInt ']' ';'                            {BoolArrDec($2,$4); };
+Dec             :   Bool Id '[' ValInt ']' ';'                          {BoolArrDec($2,$4); };
 StmtSeq 		:	Stmt StmtSeq								        {$$ = AppendSeq($1, $2); };
 StmtSeq	    	:											            {$$ = NULL; };
 Stmt            :   While '('Expr')' '{'StmtSeq '}'                     {$$ = doWhile($3, $6); };

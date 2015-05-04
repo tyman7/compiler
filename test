@@ -2,6 +2,9 @@ int i;
 
 def int test()
 {
+    int j;
+    j = 9;
+    print j;
     return 2 + 2;
 }
 

@@ -12,7 +12,9 @@
 
 extern struct SymTab *table;
 extern struct SymTab *ProcSymTab;
-
+extern struct SymTab *locTable;
+extern int global;
+extern int StackPointer;
 /* Semantics support routines */
 
 
@@ -82,8 +84,14 @@ struct ExprRes * doArrayRval(char * name, struct  ExprRes * index){
 
 
     //change later for variable locality
+    
+    if( vtype->Local) {
+        AppendSeq(index->Instrs, GenInstr(NULL, "addi", TmpRegName(reg), "$sp", Imm(vtype->StackIndex)));
 
-    AppendSeq(index->Instrs, GenInstr( NULL, "la", TmpRegName(reg), name, NULL));
+    }
+    else{
+        AppendSeq(index->Instrs, GenInstr( NULL, "la", TmpRegName(reg), name, NULL));
+    }
     AppendSeq(index->Instrs, GenInstr(NULL, "mul", TmpRegName(index->Reg), TmpRegName(index->Reg), "4"));
     AppendSeq(index->Instrs, GenInstr(NULL, "add", TmpRegName(reg), TmpRegName(reg), TmpRegName(index->Reg)));
     AppendSeq(index->Instrs, GenInstr(NULL , "lw", TmpRegName(index->Reg), buffer, NULL));
@@ -101,17 +109,36 @@ struct ExprRes * doArrayRval(char * name, struct  ExprRes * index){
 
 struct ExprRes *  doRval(char * name)  { 
    struct ExprRes *res;
-   struct SymEntry * e = FindName(table, name); 
+   struct SymEntry * e;
+   if( global ){
+       e = FindName(locTable, name);
+       if( !e) {
+           e = FindName(table, name);
+       }
+   }
+   else {
+       e = FindName(table, name);
+               }
    if (!e) {
 		WriteIndicator(GetCurrentColumn());
 		WriteMessage("Undeclared variable");
         exit(1); //doing something stupid like "print ln;" will cause me to segfault if we don't quit
    }
-   
+  struct Vtype * vtype = ((struct Vtype *)e->Attributes);
+
+
+
   res = (struct ExprRes *) malloc(sizeof(struct ExprRes));
   res->Reg = AvailTmpReg();
-  res->Instrs = GenInstr(NULL,"lw",TmpRegName(res->Reg),name,NULL);
-  res->Type = ((struct Vtype *)e->Attributes)->Type;
+  
+  if ( vtype->Local == 0 ){
+         res->Instrs = GenInstr(NULL,"lw",TmpRegName(res->Reg),name,NULL); 
+  }
+  else {
+      res->Instrs = GenInstr(NULL, "lw", TmpRegName(res->Reg), RegOff(vtype->StackIndex, "$sp"), NULL);
+  }
+  
+  res->Type = vtype->Type;
   return res;
 }
 
@@ -411,8 +438,16 @@ struct InstrSeq * doPrintln(){
 }
 
 struct InstrSeq * doArrayAssign( char * name, struct ExprRes * index, struct ExprRes * val){
-    
-    struct SymEntry * e = FindName(table, name);
+    struct SymEntry *e;
+    if( global ){
+        e = FindName(locTable, name);
+        if( !e){
+            e = FindName(table, name);
+        }
+    }
+    else{
+        e = FindName(table, name);
+    }
     struct Vtype * vtype = ((struct Vtype *)e->Attributes);
     struct InstrSeq * code;
     int reg = AvailTmpReg();
@@ -431,7 +466,16 @@ struct InstrSeq * doArrayAssign( char * name, struct ExprRes * index, struct Exp
     code = val->Instrs;
     AppendSeq(code, index->Instrs);
     // change for locality later
-    AppendSeq( code, GenInstr( NULL, "la", TmpRegName(reg), name, NULL));
+    if (! vtype->Local){
+        AppendSeq( code, GenInstr( NULL, "la", TmpRegName(reg), name, NULL));
+         
+    }
+    else {
+        AppendSeq(code, GenInstr(NULL, "addi", TmpRegName(reg), "$sp", Imm(vtype->StackIndex)));
+    }
+    
+    
+    
     AppendSeq( code, GenInstr( NULL, "mul", TmpRegName(index->Reg), TmpRegName(index->Reg), "4"));
     AppendSeq( code, GenInstr(NULL, "add", TmpRegName(reg), TmpRegName(reg), TmpRegName(index->Reg)));
     AppendSeq( code, GenInstr(NULL, "sw", TmpRegName(val->Reg), buffer, NULL));
@@ -446,28 +490,41 @@ struct InstrSeq * doArrayAssign( char * name, struct ExprRes * index, struct Exp
 }
 
 struct InstrSeq * doAssign(char *name, struct ExprRes * Expr) { 
-
+    struct SymEntry *e;
   struct InstrSeq *code;
-  
-   struct SymEntry * e = FindName(table,name);
+   
+  if (global){
+       e = FindName(locTable, name);
+       if(!e){
+           e = FindName(table, name);
+       }
+   }
+   else{
+        e = FindName(table,name);
+   }
    if (!e) {
 		WriteIndicator(GetCurrentColumn());
 		WriteMessage("Undeclared variable");
    }
-   if(  Expr->Type != -1 &&  ((struct Vtype *)e->Attributes)->Type != Expr->Type){
+   struct Vtype * vtype = ((struct Vtype *)e->Attributes);
+   if(  Expr->Type != -1 &&  vtype->Type != Expr->Type){
        TypeError();
    }
-
- 
-
-  code = Expr->Instrs;
   
-  AppendSeq(code,GenInstr(NULL,"sw",TmpRegName(Expr->Reg), name,NULL));
-
-  ReleaseTmpReg(Expr->Reg);
-  free(Expr);
+   code = Expr->Instrs;
   
-  return code;
+   if( vtype->Local == 0 ) {
+        AppendSeq(code, GenInstr(NULL, "sw", TmpRegName(Expr->Reg), name, NULL));
+   }
+   else {
+        AppendSeq(code, GenInstr(NULL, "sw", TmpRegName(Expr->Reg), RegOff(vtype->StackIndex, "$sp"), NULL));
+   }
+
+  
+   ReleaseTmpReg(Expr->Reg);
+   free(Expr);
+  
+   return code;
 }
 
 struct InstrSeq *doArrayRead( char * VarName, struct ExprRes * index){
@@ -552,7 +609,17 @@ void IntDec(char * VarName){
     struct SymEntry * e;
     vtype->Type = TYPE_INT;
     vtype->Size = 1;
-    EnterName(table, VarName, &e);
+    vtype->StackIndex = StackPointer;
+    StackPointer = StackPointer + 4;
+    if( global){
+        EnterName(locTable, VarName, &e);
+        vtype->Local = 1;
+    }
+    else {
+        EnterName(table, VarName, &e);
+        vtype->Local = 0;
+    }
+    
     SetAttr(e,(void*)vtype);
 }
 
@@ -563,7 +630,17 @@ void IntArrDec(char * VarName, char * Size){
     struct Vtype * vtype = malloc(sizeof(struct Vtype));
     vtype->Type = TYPE_INTARR;
     vtype->Size = ArraySize;
-    EnterName(table, VarName, &e);
+    vtype->StackIndex = StackPointer;
+    StackPointer = StackPointer + ArraySize * 4;
+    if (global){
+        EnterName(locTable, VarName, &e);
+        vtype->Local = 1;
+    }
+    else {
+        EnterName(table, VarName, &e);
+        vtype->Local = 0;
+    }
+    
     SetAttr(e, (void*)vtype);
 
 }
@@ -574,7 +651,16 @@ void BoolDec(char * VarName){
     struct SymEntry *e;
     vtype->Type = TYPE_BOOL;
     vtype->Size = 1;
-    EnterName(table, VarName, &e);
+     vtype->StackIndex = StackPointer;
+    StackPointer = StackPointer + 4;
+    if( global ) {
+        EnterName(locTable, VarName, &e);
+        vtype->Local = 1;
+    }
+    else {
+        EnterName(table, VarName, &e);
+        vtype->Local = 0;
+    }
     SetAttr(e, (void*)vtype);
 
 }
@@ -586,7 +672,16 @@ void BoolArrDec(char * VarName, char * Size){
     struct Vtype * vtype = malloc(sizeof(struct Vtype));
     vtype->Type = TYPE_BOOLARR;
     vtype->Size = ArraySize;
-    EnterName(table, VarName, &e);
+    vtype->StackIndex = StackPointer;
+    StackPointer = StackPointer + ArraySize * 4;
+    if(global ){
+        EnterName(locTable, VarName, &e);
+        vtype->Local = 1;
+    }
+    else {
+        EnterName(table, VarName, &e);
+        vtype->Local = 0;
+    }
     SetAttr(e, (void*)vtype);
 }
 
@@ -663,7 +758,10 @@ extern struct InstrSeq * doIfElse(struct ExprRes *res, struct InstrSeq * iseq, s
 
 extern void FuncInit(char *name, int type)
 {
+    global = 1;
+    StackPointer = 0;
     struct SymEntry *e;
+    locTable = CreateSymTab(33);
     EnterName(ProcSymTab, name, &e);
     struct Vtype *t = malloc(sizeof(struct Vtype));
     t->Type = type;
@@ -678,6 +776,8 @@ extern struct InstrSeq *FuncDec(char *name, struct InstrSeq *code)
     fcode = GenInstr(nname, NULL, NULL, NULL, NULL);
     fcode = AppendSeq(fcode, code);
     fcode = AppendSeq(fcode, GenInstr(NULL, "jr", "$ra", NULL, NULL));
+    DestroySymTab(locTable);
+    locTable = NULL;
     return fcode;
 }
 
