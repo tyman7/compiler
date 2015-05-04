@@ -16,6 +16,7 @@ FILE *aFile;
 
 int main(int argc, char * argv[]) {
 	table = CreateSymTab(33);
+    ProcSymTab = CreateSymTab(33);
 	//assumes there is a listing file
 	slabels = NULL;
     OpenFiles(argv[1], argv[2]);

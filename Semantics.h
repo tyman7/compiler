@@ -78,6 +78,12 @@ extern struct InstrSeq * doArrayRead(char * VarName, struct ExprRes * index);
 extern struct InstrSeq * doRead(char * VarName);
 extern struct ExprRes * doArrayRval(char * name, struct ExprRes * index);
 
+extern void FuncInit(char *name, int type);
+extern struct InstrSeq *FuncDec(char *name, struct InstrSeq *code);
+extern struct ExprRes *doFuncCall(char *name);
+extern struct InstrSeq *doFuncStmt(char *name);
+extern struct InstrSeq *doReturn(struct ExprRes *val);
+
 extern void IntArrDec(char * VarName, char * Size);
 extern void BoolArrDec(char * VarName, char * Size);
 extern void IntDec(char* VarName);

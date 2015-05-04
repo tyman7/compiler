@@ -1,7 +1,17 @@
-int i[5];
+int i;
 
-i[0] = 1;
+def int test()
+{
+    return 2 + 2;
+}
 
-print i;
-
+def int printval()
+{
+    print i;
+}
+def int main()
+{
+    i = test();
+    call printval();
+}
 

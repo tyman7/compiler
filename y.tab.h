@@ -64,7 +64,10 @@ extern int yydebug;
     STR = 274,
     Read = 275,
     Else = 276,
-    While = 277
+    While = 277,
+    Def = 278,
+    Call = 279,
+    Return = 280
   };
 #endif
 /* Tokens.  */
@@ -88,6 +91,9 @@ extern int yydebug;
 #define Read 275
 #define Else 276
 #define While 277
+#define Def 278
+#define Call 279
+#define Return 280
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -102,7 +108,7 @@ union YYSTYPE
   struct InstrSeq * InstrSeq;
   struct BExprRes * BExprRes;
 
-#line 106 "y.tab.h" /* yacc.c:1909  */
+#line 112 "y.tab.h" /* yacc.c:1909  */
 };
 
 typedef union YYSTYPE YYSTYPE;

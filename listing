@@ -1,7 +1,17 @@
-1. int i[5];
+1. int i;
 2. 
-3. i[0] = 1;
-4. 
-5. print i;
-6. 
+3. def int test()
+4. {
+5.     return 2 + 2;
+6. }
 7. 
+8. def int printval()
+9. {
+10.     print i;
+11. }
+12. def int main()
+13. {
+14.     i = test();
+15.     call printval();
+16. }
+17. 

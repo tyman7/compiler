@@ -11,6 +11,7 @@
 #include "IOMngr.h"
 
 extern struct SymTab *table;
+extern struct SymTab *ProcSymTab;
 
 /* Semantics support routines */
 
@@ -660,6 +661,67 @@ extern struct InstrSeq * doIfElse(struct ExprRes *res, struct InstrSeq * iseq, s
 
 }
 
+extern void FuncInit(char *name, int type)
+{
+    struct SymEntry *e;
+    EnterName(ProcSymTab, name, &e);
+    struct Vtype *t = malloc(sizeof(struct Vtype));
+    t->Type = type;
+    SetAttr(e, (void *)t);
+}
+
+extern struct InstrSeq *FuncDec(char *name, struct InstrSeq *code)
+{
+    char nname[100];
+    snprintf(nname, 100, "_%s", name);
+    struct InstrSeq *fcode;
+    fcode = GenInstr(nname, NULL, NULL, NULL, NULL);
+    fcode = AppendSeq(fcode, code);
+    fcode = AppendSeq(fcode, GenInstr(NULL, "jr", "$ra", NULL, NULL));
+    return fcode;
+}
+
+extern struct ExprRes *doFuncCall(char *name)
+{
+   char nname[100];
+   snprintf(nname, 100, "_%s", name);
+   struct SymEntry *e;
+   e = FindName(ProcSymTab, name);
+   if(!e)
+   {
+        WriteIndicator(GetCurrentColumn());
+        WriteMessage("Function Not Declared");
+        exit(1);
+   }
+   struct ExprRes *res = malloc(sizeof(struct ExprRes));
+   res->Reg = AvailTmpReg();
+   res->Type = TYPE_INT;
+   res->Instrs = SaveSeq();
+   AppendSeq(res->Instrs, GenInstr(NULL, "jal", nname, NULL, NULL));
+   AppendSeq(res->Instrs, RestoreSeq());
+   AppendSeq(res->Instrs, GenInstr(NULL, "move", TmpRegName(res->Reg), "$v0", NULL));
+   return res;
+}
+
+extern struct InstrSeq *doFuncStmt(char *name)
+{
+    struct ExprRes *call = doFuncCall(name);
+    ReleaseTmpReg(call->Reg);
+    struct InstrSeq *instrs = call->Instrs;
+    free(call);
+    return instrs;
+}
+
+
+extern struct InstrSeq *doReturn(struct ExprRes *val)
+{
+    struct InstrSeq *instrs = val->Instrs;
+    AppendSeq(instrs, GenInstr(NULL, "move", "$v0", TmpRegName(val->Reg), NULL));
+    AppendSeq(instrs, GenInstr(NULL, "jr", "$ra", NULL, NULL));
+    ReleaseTmpReg(val->Reg);
+    free(val);
+    return instrs;
+}
 
 void							 
 Finish(struct InstrSeq *Code)
@@ -671,9 +733,10 @@ Finish(struct InstrSeq *Code)
   code = GenInstr(NULL,".text",NULL,NULL,NULL);
   AppendSeq(code,GenInstr(NULL,".globl","main",NULL,NULL));
   AppendSeq(code, GenInstr("main",NULL,NULL,NULL,NULL));
-  AppendSeq(code,Code);
+  AppendSeq(code, doFuncStmt("main"));
   AppendSeq(code, GenInstr(NULL, "li", "$v0", "10", NULL)); 
   AppendSeq(code, GenInstr(NULL,"syscall",NULL,NULL,NULL));
+  AppendSeq(code,Code);
   AppendSeq(code,GenInstr(NULL,".data",NULL,NULL,NULL));
   AppendSeq(code,GenInstr(NULL,".align","4",NULL,NULL));
   AppendSeq(code,GenInstr("_nl",".asciiz","\"\\n\"",NULL,NULL));

@@ -44,6 +44,8 @@ extern struct SymEntry *entry;
 %type <ExprRes> ExpTerm
 %type <InstrSeq> RExprSeq
 %type <string> ValInt
+%type <InstrSeq> FDec
+%type <InstrSeq> FSeq
 
 %token Ident 		
 %token IntLit 	
@@ -65,12 +67,21 @@ extern struct SymEntry *entry;
 %token Read
 %token Else
 %token While
+%token Def
+%token Call
+%token Return
 
 %%
 
-Prog			:	Declarations StmtSeq						        {Finish($2); };
+Prog			:	Declarations FSeq	 					            {Finish($2); };
 Declarations	:	Dec Declarations							        { };
 Declarations	:											            { };
+FSeq            :   FDec FSeq                                           {$$ = AppendSeq($1, $2);};
+FSeq            :                                                       {$$ = NULL;};
+FDec            :   Def Int Id '(' ')'                                  {FuncInit($3, TYPE_INT);}
+                    '{' StmtSeq '}'                                     {$$ = FuncDec($3, $8);};
+FDec            :   Def Bool Id '(' ')'                                 {FuncInit($3, TYPE_BOOL); }
+                    '{' StmtSeq '}'                                     {$$ = FuncDec($3, $8); };
 Dec		    	:	Int Id ';'                                       	{IntDec($2); };
 Dec             :   Bool Id ';'                                         {BoolDec($2); };
 Dec             :   Int Id '[' ValInt ']' ';'                           {IntArrDec($2,$4); };
@@ -88,6 +99,8 @@ Stmt            :   Id '[' Expr ']' '=' Expr ';'                        {$$ = do
 Stmt			:	IF '(' Expr ')' '{' StmtSeq '}'	    		    	{$$ = doIf($3, $6); };
 Stmt            :   IF '(' Expr ')' '{' StmtSeq '}' Else '{'StmtSeq'}'  {$$ = doIfElse($3, $6, $10); }; 
 Stmt            :   Read '(' RExprSeq ')' ';'                           {$$ = $3; };
+Stmt            :   Call Id '(' ')' ';'                                 {$$ = doFuncStmt($2);};
+Stmt            :   Return Expr ';'                                     {$$ = doReturn($2);};
 RExprSeq        :   RExpr ',' RExprSeq                                  {$$ = AppendSeq($1,$3); };
 RExprSeq        :   RExpr                                               {$$ = $1; };
 RExpr           :   Id                                                  {$$ = doRead($1); };
@@ -124,6 +137,7 @@ Factor          :   Tru                                                 { $$ = d
 Factor          :   Fal                                                 { $$ = doBoolLit(0); };
 Factor          :   STR                                                 { $$ = doStrLit(yytext ); };
 Factor		    :   ValInt                                              { $$ = doIntLit($1) ; };
+Factor          :   Id '(' ')'                                          { $$ = doFuncCall($1); };
 ValInt          :   IntLit	          						            { $$ = strdup(yytext); };
 Factor          :   '(' Expr ')'                                        { $$ = $2; };
 Factor		    :	Id								                 	{ $$ = doRval($1); };
